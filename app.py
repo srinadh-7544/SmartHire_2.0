@@ -1,20 +1,62 @@
-from flask import Flask, render_template, request, redirect, session, url_for, flash, send_from_directory
-import sqlite3
+from flask import Flask, render_template, request, redirect, session, url_for, flash, send_from_directory, jsonify
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
-import os
 from datetime import datetime
 from functools import wraps
+from PyPDF2 import PdfReader
+import psycopg2
+from psycopg2.extras import RealDictCursor
+import psycopg2.errors
+from create_tables import init_db
+init_db()
+import os
+import re
+def get_db_connection():
+    database_url = os.environ.get("DATABASE_URL")
+
+    if not database_url:
+        raise Exception("DATABASE_URL not set")
+
+    return psycopg2.connect(
+        database_url,
+        cursor_factory=RealDictCursor
+    )
+
 
 app = Flask(__name__)
-app.secret_key = os.environ.get('SECRET_KEY', 'your-secret-key-change-in-production')
-app.config['UPLOAD_FOLDER'] = 'uploads/resumes'
-app.config['MAX_CONTENT_LENGTH'] = 5 * 1024 * 1024  # 5MB max file size
-ALLOWED_EXTENSIONS = {'pdf', 'doc', 'docx'}
-DATABASE = "database.db"
+app.secret_key = os.environ.get("SECRET_KEY", "change-this-secret")
 
-# Create upload folder if doesn't exist
-os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
+app.config["UPLOAD_FOLDER"] = "uploads/resumes"
+app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
+
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+
+ALLOWED_EXTENSIONS = {"pdf"}
+
+def parse_resume(file_path):
+    reader = PdfReader(file_path)
+    text = ""
+
+    for page in reader.pages:
+        text += page.extract_text() or ""
+
+    text = text.lower()
+
+    skills_list = [
+        "python", "java", "flask", "django",
+        "react", "node", "sql",
+        "machine learning", "html", "css", "javascript"
+    ]
+
+    detected_skills = [s for s in skills_list if s in text]
+
+    exp_match = re.search(r'(\d+)\+?\s+years', text)
+    experience = int(exp_match.group(1)) if exp_match else 0
+
+    return {
+        "skills": ", ".join(detected_skills),
+        "experience": experience
+    }
 
 
 # ---------------- DECORATORS ----------------
@@ -61,135 +103,7 @@ def get_db_connection():
     conn.row_factory = sqlite3.Row
     return conn
 
-def init_db():
-    conn = get_db_connection()
-    cursor = conn.cursor()
 
-    # Drop existing tables (CAUTION: This deletes all data!)
-    # Uncomment these lines if you want a complete fresh start
-    # cursor.execute("DROP TABLE IF EXISTS applications")
-    # cursor.execute("DROP TABLE IF EXISTS jobs")
-    # cursor.execute("DROP TABLE IF EXISTS users")
-    # cursor.execute("DROP TABLE IF EXISTS activity_log")
-    # cursor.execute("DROP TABLE IF EXISTS saved_jobs")
-
-    # Enhanced Users table with profile fields
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS users (
-            user_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            full_name TEXT NOT NULL,
-            email TEXT UNIQUE NOT NULL,
-            password TEXT NOT NULL,
-            role TEXT NOT NULL,
-            phone TEXT,
-            location TEXT,
-            skills TEXT,
-            experience_years INTEGER,
-            resume_path TEXT,
-            profile_completed INTEGER DEFAULT 0,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-    """)
-
-    # Enhanced Jobs table with more details
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS jobs (
-                                            job_id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                            title TEXT NOT NULL,
-                                            company TEXT NOT NULL,
-                                            location TEXT,
-                                            job_type TEXT DEFAULT 'Full-time',
-                                            experience_required TEXT,
-                                            salary_range TEXT,
-                                            skills_required TEXT,
-                                            description TEXT,
-                                            requirements TEXT,
-                                            status TEXT DEFAULT 'Active',
-                                            posted_by INTEGER,
-                                            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                                            FOREIGN KEY(posted_by) REFERENCES users(user_id)
-        )
-    """)
-
-    # Enhanced Applications table with more tracking
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS applications (
-            application_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            job_id INTEGER NOT NULL,
-            candidate_id INTEGER NOT NULL,
-            status TEXT DEFAULT 'Applied',
-            cover_letter TEXT,
-            resume_path TEXT,
-            score INTEGER DEFAULT 0,
-            hr_notes TEXT,
-            applied_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(job_id, candidate_id),
-            FOREIGN KEY(job_id) REFERENCES jobs(job_id),
-            FOREIGN KEY(candidate_id) REFERENCES users(user_id)
-        )
-    """)
-
-    # Activity Log table for tracking
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS activity_log (
-            log_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            user_id INTEGER,
-            action TEXT,
-            details TEXT,
-            timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY(user_id) REFERENCES users(user_id)
-        )
-    """)
-
-    # Saved Jobs table
-    cursor.execute("""
-        CREATE TABLE IF NOT EXISTS saved_jobs (
-            save_id INTEGER PRIMARY KEY AUTOINCREMENT,
-            candidate_id INTEGER NOT NULL,
-            job_id INTEGER NOT NULL,
-            saved_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE(candidate_id, job_id),
-            FOREIGN KEY(candidate_id) REFERENCES users(user_id),
-            FOREIGN KEY (job_id) REFERENCES jobs (job_id)
-        )
-    """)
-
-    # Insert enhanced sample jobs
-    jobs_count = cursor.execute("SELECT COUNT(*) FROM jobs").fetchone()[0]
-    if jobs_count == 0:
-        sample_jobs = [
-            ("Python Developer", "TechCorp", "Bangalore", "Full-time", "2-4 years",
-             "₹8-12 LPA", "Python, Flask, Django, SQL",
-             "Backend Python development with Flask/Django",
-             "Strong Python skills, REST API experience", "Active"),
-            ("Frontend Developer", "WebWorks", "Hyderabad", "Full-time", "1-3 years",
-             "₹6-10 LPA", "React, JavaScript, CSS, Bootstrap",
-             "React.js & Bootstrap development",
-             "Modern JavaScript, responsive design", "Active"),
-            ("Data Analyst", "DataInsights", "Chennai", "Full-time", "0-2 years",
-             "₹5-8 LPA", "SQL, Python, Excel, Tableau",
-             "SQL & Python analysis with data visualization",
-             "Strong analytical skills, SQL proficiency", "Active"),
-            ("HR Executive", "HR Solutions", "Delhi", "Full-time", "1-3 years",
-             "₹4-7 LPA", "Recruitment, Communication",
-             "Recruitment & HR management tasks",
-             "Good communication, recruiting experience", "Active"),
-            ("AI Engineer", "AI Labs", "Pune", "Full-time", "3-5 years",
-             "₹15-25 LPA", "Python, TensorFlow, ML, Deep Learning",
-             "Machine Learning model development",
-             "Strong ML background, research experience", "Active")
-        ]
-        cursor.executemany(
-            """INSERT INTO jobs (title, company, location, job_type, experience_required, 
-               salary_range, skills_required, description, requirements, status) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-            sample_jobs
-        )
-
-    conn.commit()
-    conn.close()
-init_db()
 
 
 # ---------------- HOME ----------------
@@ -205,48 +119,48 @@ def home():
                            total_companies=total_companies,
                            featured_jobs=featured_jobs)
 
-
-# ---------------- REGISTER ----------------
 @app.route("/register", methods=["GET", "POST"])
 def register():
     if request.method == "POST":
         full_name = request.form["full_name"]
         email = request.form["email"]
-        password = request.form["password"]
+        password = generate_password_hash(request.form["password"])
         role = request.form["role"].upper()
 
-        if len(password) < 6:
-            flash("Password must be at least 6 characters", "danger")
-            return render_template("register.html")
-
-        hashed_password = generate_password_hash(password)
         conn = get_db_connection()
+        cursor = conn.cursor()
+
         try:
-            cursor = conn.cursor()
             cursor.execute(
-                "INSERT INTO users (full_name, email, password, role) VALUES (?, ?, ?, ?)",
-                (full_name, email, hashed_password, role)
+                """INSERT INTO users (full_name, email, password, role)
+                   VALUES (%s, %s, %s, %s)
+                   RETURNING user_id""",
+                (full_name, email, password, role)
             )
-            conn.commit()
 
-            # Log activity
+            user_id = cursor.fetchone()["user_id"]
+
             cursor.execute(
-                "INSERT INTO activity_log (user_id, action, details) VALUES (?, ?, ?)",
-                (cursor.lastrowid, "REGISTRATION", f"New {role} registered")
+                """INSERT INTO activity_log (user_id, action, details)
+                   VALUES (%s, %s, %s)""",
+                (user_id, "REGISTRATION", f"{role} registered")
             )
+
             conn.commit()
+            cursor.close()
             conn.close()
 
-            flash("Registration successful! Please login.", "success")
+            flash("Registration successful", "success")
             return redirect(url_for("login"))
-        except sqlite3.IntegrityError:
+
+        except psycopg2.errors.UniqueViolation:
+            conn.rollback()
+            cursor.close()
             conn.close()
-            flash("Email already exists!", "danger")
-            return render_template("register.html")
+            flash("Email already exists", "danger")
+
     return render_template("register.html")
 
-
-# ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
@@ -254,31 +168,31 @@ def login():
         password = request.form["password"]
 
         conn = get_db_connection()
-        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+        cursor = conn.cursor()
+
+        cursor.execute(
+            "SELECT * FROM users WHERE email = %s",
+            (email,)
+        )
+
+        user = cursor.fetchone()
+        cursor.close()
+        conn.close()
 
         if user and check_password_hash(user["password"], password):
             session["user_id"] = user["user_id"]
-            session["role"] = user["role"].upper()
+            session["role"] = user["role"]
             session["name"] = user["full_name"]
 
-            # Log activity
-            conn.execute(
-                "INSERT INTO activity_log (user_id, action, details) VALUES (?, ?, ?)",
-                (user["user_id"], "LOGIN", "User logged in")
+            return redirect(
+                url_for("hr_dashboard")
+                if user["role"] == "HR"
+                else url_for("candidate_dashboard")
             )
-            conn.commit()
-            conn.close()
 
-            flash(f"Welcome back, {user['full_name']}!", "success")
-            if session["role"] == "HR":
-                return redirect(url_for("hr_dashboard"))
-            else:
-                return redirect(url_for("candidate_dashboard"))
-        else:
-            conn.close()
-            flash("Invalid email or password!", "danger")
+        flash("Invalid credentials", "danger")
+
     return render_template("login.html")
-
 
 # ---------------- LOGOUT ----------------
 @app.route("/logout")
@@ -644,47 +558,53 @@ def my_applications():
     conn.close()
     return render_template("my_applications.html", applications=applications)
 
-
-# ---------------- APPLY JOB WITH COVER LETTER ----------------
-@app.route("/apply/<int:job_id>", methods=["GET", "POST"])
-@candidate_required
+@app.route("/apply/<int:job_id>", methods=["POST"])
 def apply_job(job_id):
     candidate_id = session.get("user_id")
+    cover_letter = request.form.get("cover_letter", "")
 
-    if request.method == "POST":
-        cover_letter = request.form.get("cover_letter", "")
+    resume_file = request.files.get("resume")
+    resume_path = None
 
-        # Handle resume upload
-        resume_path = None
-        if 'resume' in request.files:
-            file = request.files['resume']
-            if file and file.filename and allowed_file(file.filename):
-                filename = secure_filename(f"{candidate_id}_{int(datetime.now().timestamp())}_{file.filename}")
-                file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-                resume_path = filename
+    if resume_file:
+        filename = secure_filename(
+            f"{candidate_id}_{int(datetime.now().timestamp())}_{resume_file.filename}"
+        )
+        resume_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        resume_file.save(resume_path)
 
-        conn = get_db_connection()
-        try:
-            conn.execute(
-                """INSERT INTO applications (job_id, candidate_id, cover_letter, resume_path)
-                   VALUES (?, ?, ?, ?)""",
-                (job_id, candidate_id, cover_letter, resume_path)
-            )
-            conn.commit()
-            conn.close()
-            flash("Application submitted successfully!", "success")
-            return redirect(url_for("candidate_dashboard"))
-        except sqlite3.IntegrityError:
-            conn.close()
-            flash("You have already applied to this job!", "warning")
-            return redirect(url_for("candidate_dashboard"))
+        parsed = parse_resume(resume_path)
 
-    # GET request - show application form
     conn = get_db_connection()
-    job = conn.execute("SELECT * FROM jobs WHERE job_id=?", (job_id,)).fetchone()
-    conn.close()
-    return render_template("apply_job.html", job=job)
+    cursor = conn.cursor()
 
+    try:
+        cursor.execute(
+            """INSERT INTO applications
+               (job_id, candidate_id, cover_letter, resume_path)
+               VALUES (%s, %s, %s, %s)""",
+            (job_id, candidate_id, cover_letter, resume_path)
+        )
+
+        if resume_path:
+            cursor.execute(
+                """UPDATE users
+                   SET skills=%s, experience_years=%s
+                   WHERE user_id=%s""",
+                (parsed["skills"], parsed["experience"], candidate_id)
+            )
+
+        conn.commit()
+        flash("Application submitted!", "success")
+
+    except psycopg2.errors.UniqueViolation:
+        conn.rollback()
+        flash("Already applied to this job", "warning")
+
+    cursor.close()
+    conn.close()
+
+    return redirect(url_for("candidate_dashboard"))
 
 # ---------------- SAVE/UNSAVE JOB ----------------
 @app.route("/save-job/<int:job_id>", methods=["POST"])
@@ -968,4 +888,3 @@ def chatbot_job_details(job_id):
 if __name__ == "__main__":
     init_db()
     app.run(host="0.0.0.0", port=5000)
-
