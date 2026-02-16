@@ -8,7 +8,7 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 import psycopg2.errors
 from create_tables import init_db
-init_db()
+
 import os
 import re
 def get_db_connection():
@@ -886,5 +886,5 @@ def chatbot_job_details(job_id):
 
 # ---------------- RUN APP ----------------
 if __name__ == "__main__":
-    init_db()
+
     app.run(host="0.0.0.0", port=5000)
