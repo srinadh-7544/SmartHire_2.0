@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Portal ATS - Find Your Dream Job</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+
+</head>
+<body>
+
+<!-- Navigation with Dropdown -->
+<nav class="navbar navbar-expand-lg navbar-custom sticky-top">
+    <div class="container">
+        <a class="navbar-brand navbar-brand-custom" href="/">
+            <i class="fas fa-briefcase"></i>
+            <span>Job Portal</span>
+        </a>
+
+        <button class="navbar-toggler navbar-toggler-custom"
+                type="button"
+                data-bs-toggle="collapse"
+                data-bs-target="#navbarNav">
+            <div class="navbar-toggler-icon-custom">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+        </button>
+
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav navbar-nav-custom ms-auto align-items-center">
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom active" href="/">
+                        <i class="fas fa-home me-1"></i>Home
+                    </a>
+                </li>
+
+                <!-- Jobs Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link nav-link-custom dropdown-toggle"
+                       href="#"
+                       id="jobsDropdown"
+                       role="button"
+                       data-bs-toggle="dropdown">
+                        <i class="fas fa-briefcase me-1"></i>Jobs
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-custom">
+                        <li>
+                            <a class="dropdown-item dropdown-item-custom" href="#jobs">
+                                <i class="fas fa-search me-2"></i>Browse Jobs
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item dropdown-item-custom" href="#jobs">
+                                <i class="fas fa-fire me-2"></i>Featured Jobs
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item dropdown-item-custom" href="#jobs">
+                                <i class="fas fa-building me-2"></i>By Company
+                            </a>
+                        </li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li>
+                            <a class="dropdown-item dropdown-item-custom" href="/login">
+                                <i class="fas fa-bookmark me-2"></i>Saved Jobs
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item">
+                    <a class="nav-link nav-link-custom" href="#features">
+                        <i class="fas fa-star me-1"></i>Features
+                    </a>
+                </li>
+
+                <!-- For Employers Dropdown -->
+                <li class="nav-item dropdown">
+                    <a class="nav-link nav-link-custom dropdown-toggle"
+                       href="#"
+                       id="employersDropdown"
+                       role="button"
+                       data-bs-toggle="dropdown">
+                        <i class="fas fa-user-tie me-1"></i>For Employers
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-custom">
+                        <li>
+                            <a class="dropdown-item dropdown-item-custom" href="/register">
+                                <i class="fas fa-plus-circle me-2"></i>Post a Job
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item dropdown-item-custom" href="/login">
+                                <i class="fas fa-users me-2"></i>Find Candidates
+                            </a>
+                        </li>
+                        <li>
+                            <a class="dropdown-item dropdown-item-custom" href="/login">
+                                <i class="fas fa-chart-line me-2"></i>Analytics
+                            </a>
+                        </li>
+                    </ul>
+                </li>
+
+                <li class="nav-item d-none d-lg-block">
+                    <div style="width: 1px; height: 30px; background: #e9ecef; margin: 0 10px;"></div>
+                </li>
+
+                <li class="nav-item">
+                    <a href="/login" class="btn btn-login-custom">
+                        <i class="fas fa-sign-in-alt me-2"></i>Login
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a href="/register" class="btn btn-register-custom">
+                        <i class="fas fa-user-plus me-2"></i>Register
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero-section">
+    <div class="container">
+        <div class="hero-content text-center">
+            <h1 class="hero-title">Find Your Dream Job Today</h1>
+            <p class="hero-subtitle">Connect with top companies and take your career to the next level</p>
+
+            <!-- Search Box -->
+            <div class="row justify-content-center">
+                <div class="col-lg-8">
+                    <form action="/candidate/dashboard" method="get">
+                        <div class="search-box d-flex">
+                            <input type="text" class="form-control" name="search"
+                                   placeholder="Search jobs by title, company, or skills..."
+                                   aria-label="Search jobs">
+                            <button type="submit" class="btn btn-warning">
+                                <i class="fas fa-search me-2"></i>Search Jobs
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats-section mb-3 p-5">
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-lg-4 col-md-6">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-briefcase"></i>
+                    </div>
+                    <div class="stat-number" data-target="{{ total_jobs|default(0) }}">0</div>
+                    <div class="stat-label">Active Jobs</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div class="stat-number" data-target="{{ total_companies|default(0) }}">0</div>
+                    <div class="stat-label">Top Companies</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-6">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-number" data-target="1200">0</div>
+                    <div class="stat-label">Happy Candidates</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+<!-- Features Section -->
+<section class="features-section" id="features">
+    <div class="container">
+        <h2 class="section-title text-dark">Why Choose Us?</h2>
+
+        <div class="row g-4 mt-4">
+            <!-- Feature 1 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <div class="feature-icon-bg"></div>
+                        <i class="fas fa-search feature-icon"></i>
+                    </div>
+                    <h4 class="feature-title">Easy Job Search</h4>
+                    <p class="feature-description">
+                        Find jobs that match your skills and preferences with our advanced filtering system
+                    </p>
+                    <span class="feature-stat">
+                        <i class="fas fa-briefcase me-1"></i>1000+ Jobs
+                    </span>
+                </div>
+            </div>
+
+            <!-- Feature 2 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <div class="feature-icon-bg"></div>
+                        <i class="fas fa-file-upload feature-icon"></i>
+                    </div>
+                    <h4 class="feature-title">Quick Apply</h4>
+                    <p class="feature-description">
+                        Apply to multiple jobs with one click using your saved profile and resume
+                    </p>
+                    <span class="feature-stat">
+                        <i class="fas fa-clock me-1"></i>Save 80% Time
+                    </span>
+                </div>
+            </div>
+
+            <!-- Feature 3 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <div class="feature-icon-bg"></div>
+                        <i class="fas fa-chart-line feature-icon"></i>
+                    </div>
+                    <h4 class="feature-title">Track Applications</h4>
+                    <p class="feature-description">
+                        Monitor your application status in real-time through your personalized dashboard
+                    </p>
+                    <span class="feature-stat">
+                        <i class="fas fa-eye me-1"></i>Real-time Updates
+                    </span>
+                </div>
+            </div>
+
+            <!-- Feature 4 -->
+            <div class="col-lg-3 col-md-6">
+                <div class="feature-card">
+                    <div class="feature-icon-wrapper">
+                        <div class="feature-icon-bg"></div>
+                        <i class="fas fa-shield-alt feature-icon"></i>
+                    </div>
+                    <h4 class="feature-title">Secure & Private</h4>
+                    <p class="feature-description">
+                        Your data is protected with enterprise-grade security and encryption measures
+                    </p>
+                    <span class="feature-stat">
+                        <i class="fas fa-lock me-1"></i>100% Secure
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Featured Jobs Section -->
+<section class="jobs-section" id="jobs">
+    <div class="container">
+        <h2 class="section-title">Featured Jobs</h2>
+
+        {% if featured_jobs %}
+        <div class="jobs-grid">
+            {% for job in featured_jobs %}
+            <div class="job-card">
+                <!-- Card Header -->
+                <div class="job-card-header">
+                    <div class="job-company-logo">
+                        {{ job['company'][0] }}
+                    </div>
+                    <span class="job-badge">New</span>
+                </div>
+
+                <!-- Job Title -->
+                <h5 class="job-title">{{ job['title'] }}</h5>
+
+                <!-- Company Name -->
+                <div class="job-company">
+                    <i class="fas fa-building"></i>
+                    <span>{{ job['company'] }}</span>
+                </div>
+
+                <!-- Job Meta Information -->
+                <div class="job-meta">
+                    <div class="job-meta-item">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <span>{{ job['location'] }}</span>
+                    </div>
+                    <div class="job-meta-item">
+                        <i class="fas fa-clock"></i>
+                        <span>{{ job['job_type']|default('Full-time') }}</span>
+                    </div>
+                    <div class="job-meta-item">
+                        <i class="fas fa-briefcase"></i>
+                        <span>{{ job['experience_required']|default('0-2 years') }}</span>
+                    </div>
+                </div>
+
+                <!-- Skills Tags -->
+                {% if job['skills_required'] %}
+                <div class="job-skills">
+                    {% for skill in job['skills_required'].split(',')[:3] %}
+                    <span class="skill-tag">{{ skill.strip() }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+
+                <!-- Salary -->
+                {% if job['salary_range'] %}
+                <div class="job-salary">
+                    <i class="fas fa-rupee-sign"></i>
+                    <span>{{ job['salary_range'] }}</span>
+                </div>
+                {% endif %}
+
+                <!-- Footer with Time and Apply Button -->
+                <div class="job-footer">
+                    <div class="job-posted-time">
+                        <i class="far fa-clock"></i>
+                        <span>Posted 2 days ago</span>
+                    </div>
+                    <a href="/login" class="btn-apply-now">
+                        Apply Now
+                        <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <!-- Empty State -->
+        <div class="jobs-empty-state">
+            <i class="fas fa-briefcase"></i>
+            <h4>No Jobs Available</h4>
+            <p>Check back soon for new opportunities!</p>
+        </div>
+        {% endif %}
+
+        <!-- View All Jobs Button -->
+        <div class="view-all-section">
+            <a href="/login" class="btn-view-all">
+                View All Jobs
+                <i class="fas fa-arrow-right"></i>
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta-section">
+    <div class="container">
+        <h2 class="cta-title">Ready to Start Your Journey?</h2>
+        <p class="cta-subtitle">Join thousands of professionals who found their dream jobs through our platform</p>
+        <div>
+            <a href="/register" class="btn btn-light btn-lg me-3 px-5">
+                <i class="fas fa-user-plus me-2"></i>Register as Candidate
+            </a>
+            <a href="/register" class="btn btn-outline-light btn-lg px-5">
+                <i class="fas fa-building me-2"></i>Register as HR
+            </a>
+        </div>
+    </div>
+</section>
+<!-- Footer -->
+<footer class="footer">
+    <div class="container footer-container">
+        <div class="row">
+            <!-- Brand & Newsletter -->
+            <div class="col-lg-4 mb-4">
+                <div class="footer-brand">
+                    <h5 class="footer-logo">
+                        <i class="fas fa-briefcase"></i>
+                        Job Portal ATS
+                    </h5>
+                    <p class="footer-description">
+                        Your trusted partner in finding the perfect career opportunity.
+                        Connect with top companies and grow your career.
+                    </p>
+                </div>
+
+                <!-- Newsletter -->
+                <div class="newsletter-section">
+                    <h6 class="newsletter-title">
+                        <i class="fas fa-envelope me-2"></i>Subscribe to Newsletter
+                    </h6>
+                    <form class="newsletter-form" onsubmit="return false;">
+                        <input type="email"
+                               class="newsletter-input"
+                               placeholder="Enter your email"
+                               required>
+                        <button type="submit" class="newsletter-btn">
+                            Subscribe
+                        </button>
+                    </form>
+                    <small style="color: #b8b8b8; font-size: 0.85rem;">
+                        Get weekly job alerts and career tips
+                    </small>
+                </div>
+
+                <!-- Social Links -->
+                <div class="social-links">
+                    <a href="#" class="social-link facebook" title="Facebook">
+                        <i class="fab fa-facebook-f"></i>
+                    </a>
+                    <a href="#" class="social-link twitter" title="Twitter">
+                        <i class="fab fa-twitter"></i>
+                    </a>
+                    <a href="#" class="social-link linkedin" title="LinkedIn">
+                        <i class="fab fa-linkedin-in"></i>
+                    </a>
+                    <a href="#" class="social-link instagram" title="Instagram">
+                        <i class="fab fa-instagram"></i>
+                    </a>
+                </div>
+            </div>
+
+            <!-- For Candidates -->
+            <div class="col-lg-2 col-md-4 mb-4">
+                <div class="footer-section">
+                    <h6 class="footer-heading">For Candidates</h6>
+                    <div class="footer-links">
+                        <a href="/login">Browse Jobs</a>
+                        <a href="/register">Create Profile</a>
+                        <a href="/login">My Applications</a>
+                        <a href="/login">Saved Jobs</a>
+                        <a href="/login">Job Alerts</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- For Employers -->
+            <div class="col-lg-2 col-md-4 mb-4">
+                <div class="footer-section">
+                    <h6 class="footer-heading">For Employers</h6>
+                    <div class="footer-links">
+                        <a href="/register">Post a Job</a>
+                        <a href="/login">Manage Applications</a>
+                        <a href="/login">HR Dashboard</a>
+                        <a href="/login">Find Candidates</a>
+                        <a href="/login">Pricing Plans</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Company -->
+            <div class="col-lg-2 col-md-4 mb-4">
+                <div class="footer-section">
+                    <h6 class="footer-heading">Company</h6>
+                    <div class="footer-links">
+                        <a href="#features">About Us</a>
+                        <a href="#features">Contact</a>
+                        <a href="#features">Careers</a>
+                        <a href="#features">Blog</a>
+                        <a href="#features">Privacy Policy</a>
+                        <a href="#features">Terms of Service</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact Info -->
+            <div class="col-lg-2 col-md-4 mb-4">
+                <div class="footer-section">
+                    <h6 class="footer-heading">Get in Touch</h6>
+                    <div class="contact-info">
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-map-marker-alt"></i>
+                            </div>
+                            <div class="contact-text">
+                                123 Business Street,<br>
+                                New Delhi, India
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-phone-alt"></i>
+                            </div>
+                            <div class="contact-text">
+                                <a href="tel:+911234567890">+91 123 456 7890</a>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <div class="contact-icon">
+                                <i class="fas fa-envelope"></i>
+                            </div>
+                            <div class="contact-text">
+                                <a href="mailto:info@jobportal.com">info@jobportal.com</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- App Download (Optional) -->
+                    <div class="app-download-section">
+                        <h6 class="app-download-title">Download App</h6>
+                        <div class="app-buttons">
+                            <a href="#" class="app-btn">
+                                <i class="fab fa-google-play"></i>
+                                <div class="app-btn-text">
+                                    <small>GET IT ON</small>
+                                    <span>Google Play</span>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer Bottom -->
+        <div class="footer-bottom">
+            <div class="footer-bottom-content">
+                <p class="copyright">
+                    &copy; 2025 Job Portal ATS. All rights reserved. Made with
+                    <i class="fas fa-heart" style="color: #e74c3c;"></i> in India
+                </p>
+                <div class="footer-bottom-links">
+                    <a href="#features">Privacy Policy</a>
+                    <a href="#features">Terms & Conditions</a>
+                    <a href="#features">Cookie Policy</a>
+                    <a href="#features">Sitemap</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+// Navbar Scroll Effect
+window.addEventListener('scroll', function() {
+    const navbar = document.querySelector('.navbar-custom');
+    if (window.scrollY > 50) {
+        navbar.classList.add('scrolled');
+    } else {
+        navbar.classList.remove('scrolled');
+    }
+});
+
+// Active Link Highlight
+document.addEventListener('DOMContentLoaded', function() {
+    const currentLocation = window.location.pathname;
+    const navLinks = document.querySelectorAll('.nav-link-custom');
+
+    navLinks.forEach(link => {
+        if (link.getAttribute('href') === currentLocation) {
+            link.classList.add('active');
+        }
+    });
+});
+
+// Smooth Scroll for Anchor Links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        const href = this.getAttribute('href');
+        if (href !== '#') {
+            e.preventDefault();
+            const target = document.querySelector(href);
+            if (target) {
+                const navbarHeight = document.querySelector('.navbar-custom').offsetHeight;
+                const targetPosition = target.offsetTop - navbarHeight - 20;
+
+                window.scrollTo({
+                    top: targetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        }
+    });
+});
+
+// Close mobile menu when link clicked
+const navLinks = document.querySelectorAll('.nav-link-custom');
+const navbarCollapse = document.querySelector('.navbar-collapse');
+
+navLinks.forEach(link => {
+    link.addEventListener('click', () => {
+        if (navbarCollapse.classList.contains('show')) {
+            navbarCollapse.classList.remove('show');
+        }
+    });
+});
+</script>
+<script>
+// Animated Counter
+document.addEventListener('DOMContentLoaded', function() {
+    const counters = document.querySelectorAll('.stat-number');
+
+    const animateCounter = (counter) => {
+        const target = parseInt(counter.getAttribute('data-target'));
+        const duration = 2000; // 2 seconds
+        const increment = target / (duration / 16); // 60fps
+        let current = 0;
+
+        const updateCounter = () => {
+            current += increment;
+            if (current < target) {
+                counter.textContent = Math.floor(current);
+                requestAnimationFrame(updateCounter);
+            } else {
+                counter.textContent = target;
+            }
+        };
+
+        updateCounter();
+    };
+
+    // Intersection Observer for triggering animation
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                animateCounter(entry.target);
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.5 });
+
+    counters.forEach(counter => observer.observe(counter));
+});
+
+// Smooth scroll for anchor links
+document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute('href'));
+        if (target) {
+            target.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+    });
+});
+</script>
+<!-- Include Chatbot -->
+{% include 'components/chatbot.html' %}
+</body>
+</html>
