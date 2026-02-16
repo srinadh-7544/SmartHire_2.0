@@ -5,22 +5,13 @@ from datetime import datetime
 from functools import wraps
 from PyPDF2 import PdfReader
 import psycopg2
-from psycopg2.extras import RealDictCursor
 import psycopg2.errors
-from create_tables import init_db
+
+
 
 import os
 import re
-def get_db_connection():
-    database_url = os.environ.get("DATABASE_URL")
 
-    if not database_url:
-        raise Exception("DATABASE_URL not set")
-
-    return psycopg2.connect(
-        database_url,
-        cursor_factory=RealDictCursor
-    )
 
 
 app = Flask(__name__)
@@ -32,6 +23,15 @@ app.config["MAX_CONTENT_LENGTH"] = 5 * 1024 * 1024
 os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
 
 ALLOWED_EXTENSIONS = {"pdf"}
+
+def get_db_connection():
+    database_url = os.getenv("DATABASE_URL")
+
+    if not database_url:
+        raise Exception("DATABASE_URL not set")
+
+    conn = psycopg2.connect(database_url)
+    return conn
 
 def parse_resume(file_path):
     reader = PdfReader(file_path)
@@ -98,10 +98,7 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-def get_db_connection():
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    return conn
+
 
 
 

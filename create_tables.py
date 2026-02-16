@@ -117,9 +117,4 @@ def init_db():
     cursor.close()
     conn.close()
 
-    print("✅ PostgreSQL tables created successfully")
-
-
-if __name__ == "__main__":
-    init_db()
-
+print("✅ PostgreSQL tables created successfully")
