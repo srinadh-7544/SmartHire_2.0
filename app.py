@@ -101,12 +101,13 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-# ---------------- HOME ----------------
 @app.route("/")
 def home():
     conn = get_db_connection()
     cursor = conn.cursor()
 
+    cursor.execute("SELECT COUNT(*) FROM jobs WHERE status='Active'")
+    total_jobs = cursor.fetchone()[0]
 
     cursor.execute("SELECT COUNT(DISTINCT company) FROM jobs WHERE status='Active'")
     total_companies = cursor.fetchone()[0]
@@ -128,7 +129,6 @@ def home():
                            total_jobs=total_jobs,
                            total_companies=total_companies,
                            featured_jobs=featured_jobs)
-
 
 @app.route("/register", methods=["GET", "POST"])
 def register():
